@@ -62,7 +62,7 @@ public class ESRV8Runtime {
                 "})()", byteArrayToUnt8ScriptValue(bytes)));
     }
 
-    public String fromData(byte[] data) {
+    public String deserializeSigningRequest(byte[] data) {
         String script = String.format("let array = Uint8Array.from(%s)\n" +
                 "const textEncoder = {encode: global.encodeFunction}\n" +
                 "const textDecoder = {decode: global.decodeFunction}\n" +
@@ -84,16 +84,14 @@ public class ESRV8Runtime {
         return gRuntime.executeStringScript(script);
     }
 
-    public void serializeAction(IAbiProvider abiProvider, Action action) throws ESRException {
+    public void serializeActionData(IAbiProvider abiProvider, Action action) throws ESRException {
         if (action.getData().isPacked())
             return;
 
         String script = String.format("(function() {\n" +
                 "let contract = " +
                 (action.isIdentity() ? "global.getContract(global.abi)" : "global.getContract(" + abiProvider.getAbi(action.getAccount().getName()) + ")") + "\n" +
-                "console.debug('got contract: ' + typeof contract)\n" +
                 "let serializedActionData = global.Serialize.serializeActionData(contract, '%s', '%s', %s, {encode: global.encodeFunction}, {decode: global.decodeFunction})\n" +
-                "console.debug('got serizaliedActionData: ' + serializedActionData)\n" +
                 "return serializedActionData\n" +
                 "})()",
                 action.getAccount().getName(),
@@ -101,6 +99,22 @@ public class ESRV8Runtime {
                 action.getData().toJSON());
         String packed = gRuntime.executeStringScript(script);
         action.getData().setData(packed);
+    }
+
+    public byte[] serializeTransaction(String transactionJSON) {
+        String script = String.format("(function() {\n" +
+                "const textEncoder = {encode: global.encodeFunction}\n" +
+                "const textDecoder = {decode: global.decodeFunction}\n" +
+                "const buffer = new Serialize.SerialBuffer({\n" +
+                "    textEncoder,\n" +
+                "    textDecoder\n" +
+                "})\n" +
+                "let data = %s\n" +
+                "global.transactionType.serialize(buffer, data)\n" +
+                "return buffer.asUint8Array()\n" +
+                "})()", transactionJSON);
+        V8Array obj = gRuntime.executeArrayScript(script);
+        return v8ArrayToByteArray(obj);
     }
 
     public Action identityToAction(Identity identity) {
@@ -143,6 +157,120 @@ public class ESRV8Runtime {
         transaction.setExpiration(result.getString(EXPIRATION));
         transaction.setRefBlockNum((long) result.getInteger(REF_BLOCK_NUM));
         transaction.setRefBlockPrefix((long) result.getInteger(REF_BLOCK_PREFIX));
+    }
+
+    public Action getResolvedAction(Map<String, String> abiMap, PermissionLevel signer, Action raw) throws ESRException {
+        String abi = null;
+        if (!raw.getData().isPacked())
+            throw new ESRException("Cannot resolve an already resolved action");
+
+        if (!raw.isIdentity()) {
+            abi = abiMap.get(raw.getAccount().getName());
+            if (abi == null)
+                throw new ESRException("Missing ABI definition for " + raw.getAccount().getName());
+
+        } else {
+            abi = "global.abi.data";
+        }
+        String script = String.format("(function() {\n" +
+                        "const contractAbi = %s\n" +
+                        "const signer = %s\n" +
+                        "const PlaceholderName = '%s'\n" +
+                        "const PlaceholderPermission = '%s'\n" +
+                        "const contract = getContract(contractAbi)\n" +
+                        "if (signer) {\n" +
+                        "   contract.types.get('name').deserialize = (buffer) => {\n" +
+                        "       const name = buffer.getName()\n" +
+                        "       if (name === PlaceholderName) {\n" +
+                        "          return signer.actor\n" +
+                        "       } else if (name === PlaceholderPermission) {\n" +
+                        "           return signer.permission\n" +
+                        "       } else {\n" +
+                        "           return name\n" +
+                        "       }\n" +
+                        "   }\n" +
+                        "}\n" +
+                        "const textEncoder = {encode: global.encodeFunction}\n" +
+                        "const textDecoder = {decode: global.decodeFunction}\n" +
+                        "const action = Serialize.deserializeAction(\n" +
+                        "    contract,\n" +
+                        "    '%s',\n" +
+                        "    '%s',\n" +
+                        "    %s,\n" +
+                        "    '%s',\n" +
+                        "    textEncoder,\n" +
+                        "    textDecoder\n" +
+                        ")\n" +
+                        "if (signer) {\n" +
+                        "    action.authorization = action.authorization.map((auth) => {\n" +
+                        "        let { actor, permission } = auth\n" +
+                        "        if (actor === PlaceholderName) {\n" +
+                        "            actor = signer.actor\n" +
+                        "        }\n" +
+                        "        if (permission === PlaceholderPermission) {\n" +
+                        "            permission = signer.permission\n" +
+                        "        }\n" +
+                        "        if (permission === PlaceholderName) {\n" +
+                        "            permission = signer.permission\n" +
+                        "        }\n" +
+                        "        return { actor, permission }\n" +
+                        "    })\n" +
+                        "}\n" +
+                        "return JSON.stringify(action)\n" +
+                        "})()", abi, signer != null ? signer.toJSON() : UNDEFINED, SigningRequest.PLACEHOLDER_NAME, SigningRequest.PLACEHOLDER_PERMISSION,
+                raw.getAccount().getName(), raw.getName().getName(), raw.getAuthorizationJSON(), raw.getData().getPackedData());
+
+        String resolvedActionJSON = gRuntime.executeStringScript(script);
+        return new Action((JsonObject) JsonParser.parseString(resolvedActionJSON));
+    }
+
+    public byte[] getSignatureData(Signature signature) {
+        String script = String.format("(function() {\n" +
+                "const textEncoder = {encode: global.encodeFunction}\n" +
+                "const textDecoder = {decode: global.decodeFunction}\n" +
+                "const buffer = new Serialize.SerialBuffer({\n" +
+                "    textEncoder,\n" +
+                "    textDecoder\n" +
+                "})\n" +
+                "const type = AbiTypes.get('request_signature')\n" +
+                "type.serialize(buffer, %s)\n" +
+                "return buffer.asUint8Array()\n" +
+                "})()", signature.toJSON());
+        return v8ArrayToByteArray(gRuntime.executeArrayScript(script));
+    }
+
+    public byte[] serializeSigningRequest(String requestJSON) {
+        String script = String.format("(function() {\n" +
+                "const textEncoder = {encode: global.encodeFunction}\n" +
+                "const textDecoder = {decode: global.decodeFunction}\n" +
+                "const buffer = new Serialize.SerialBuffer({\n" +
+                "    textEncoder,\n" +
+                "    textDecoder\n" +
+                "})\n" +
+                "let data = %s\n" +
+                "global.signingRequestType.serialize(buffer, data)\n" +
+                "return buffer.asUint8Array()\n" +
+                "})()", requestJSON);
+        V8Array obj = gRuntime.executeArrayScript(script);
+        return v8ArrayToByteArray(obj);
+    }
+
+    public String getSignatureDigestAsHex(int protocolVersion, byte[] data) {
+        String script = String.format("(function() {\n" +
+                "const textEncoder = {encode: global.encodeFunction}\n" +
+                "const textDecoder = {decode: global.decodeFunction}\n" +
+                "const buffer = new Serialize.SerialBuffer({\n" +
+                "    textEncoder,\n" +
+                "    textDecoder\n" +
+                "})\n" +
+                "// protocol version + utf8 \"request\"\n" +
+                "buffer.pushArray([%d, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74])\n" +
+                "let data = %s\n" +
+                "buffer.pushArray(data)\n" +
+                "let bufferArray = buffer.asUint8Array()\n" +
+                "return Serialize.arrayToHex(sha256(bufferArray))\n" +
+                "})()", protocolVersion, byteArrayToUnt8ScriptValue(data));
+        return gRuntime.executeStringScript(script);
     }
 
     private void injectConsole() {
@@ -211,117 +339,4 @@ public class ESRV8Runtime {
     }
 
 
-    public Action getResolvedAction(Map<String, String> abiMap, PermissionLevel signer, Action raw) throws ESRException {
-        String abi = null;
-        if (!raw.getData().isPacked())
-            throw new ESRException("Cannot resolve an already resolved action");
-
-        if (!raw.isIdentity()) {
-            abi = abiMap.get(raw.getAccount().getName());
-            if (abi == null)
-                throw new ESRException("Missing ABI definition for " + raw.getAccount().getName());
-
-        } else {
-            abi = "global.abi.data";
-        }
-        String script = String.format("(function() {\n" +
-                "const contractAbi = %s\n" +
-                "const signer = %s\n" +
-                "const PlaceholderName = '%s'\n" +
-                "const PlaceholderPermission = '%s'\n" +
-                "const contract = getContract(contractAbi)\n" +
-                "if (signer) {\n" +
-                "   contract.types.get('name').deserialize = (buffer) => {\n" +
-                "       const name = buffer.getName()\n" +
-                "       if (name === PlaceholderName) {\n" +
-                "          return signer.actor\n" +
-                "       } else if (name === PlaceholderPermission) {\n" +
-                "           return signer.permission\n" +
-                "       } else {\n" +
-                "           return name\n" +
-                "       }\n" +
-                "   }\n" +
-                "}\n" +
-                "const textEncoder = {encode: global.encodeFunction}\n" +
-                "const textDecoder = {decode: global.decodeFunction}\n" +
-                "const action = Serialize.deserializeAction(\n" +
-                "    contract,\n" +
-                "    '%s',\n" +
-                "    '%s',\n" +
-                "    %s,\n" +
-                "    '%s',\n" +
-                "    textEncoder,\n" +
-                "    textDecoder\n" +
-                ")\n" +
-                "if (signer) {\n" +
-                "    action.authorization = action.authorization.map((auth) => {\n" +
-                "        let { actor, permission } = auth\n" +
-                "        if (actor === PlaceholderName) {\n" +
-                "            actor = signer.actor\n" +
-                "        }\n" +
-                "        if (permission === PlaceholderPermission) {\n" +
-                "            permission = signer.permission\n" +
-                "        }\n" +
-                "        if (permission === PlaceholderName) {\n" +
-                "            permission = signer.permission\n" +
-                "        }\n" +
-                "        return { actor, permission }\n" +
-                "    })\n" +
-                "}\n" +
-                "return JSON.stringify(action)\n" +
-                "})()", abi, signer != null ? signer.toJSON() : UNDEFINED, SigningRequest.PLACEHOLDER_NAME, SigningRequest.PLACEHOLDER_PERMISSION,
-                            raw.getAccount().getName(), raw.getName().getName(), raw.getAuthorizationJSON(), raw.getData().getPackedData());
-
-        String resolvedActionJSON = gRuntime.executeStringScript(script);
-        return new Action((JsonObject) JsonParser.parseString(resolvedActionJSON));
-    }
-
-    public byte[] getSignatureData(Signature signature) {
-        String script = String.format("(function() {\n" +
-                "const textEncoder = {encode: global.encodeFunction}\n" +
-                "const textDecoder = {decode: global.decodeFunction}\n" +
-                "const buffer = new Serialize.SerialBuffer({\n" +
-                "    textEncoder,\n" +
-                "    textDecoder\n" +
-                "})\n" +
-                "const type = AbiTypes.get('request_signature')\n" +
-                "type.serialize(buffer, %s)\n" +
-                "return buffer.asUint8Array()\n" +
-                "})()", signature.toJSON());
-        return v8ArrayToByteArray(gRuntime.executeArrayScript(script));
-    }
-
-    public byte[] getData(String toDataJSON) {
-        String script = String.format("(function() {\n" +
-                "const textEncoder = {encode: global.encodeFunction}\n" +
-                "const textDecoder = {decode: global.decodeFunction}\n" +
-                "const buffer = new Serialize.SerialBuffer({\n" +
-                "    textEncoder,\n" +
-                "    textDecoder\n" +
-                "})\n" +
-                "let data = %s\n" +
-                "global.signingRequestType.serialize(buffer, data)\n" +
-                "return buffer.asUint8Array()\n" +
-                "})()", toDataJSON);
-        V8Array obj = gRuntime.executeArrayScript(script);
-        return v8ArrayToByteArray(obj);
-    }
-
-    public String getSignatureDigestAsHex(int protocolVersion, byte[] data) {
-        String script = String.format("(function() {\n" +
-                "const textEncoder = {encode: global.encodeFunction}\n" +
-                "const textDecoder = {decode: global.decodeFunction}\n" +
-                "const buffer = new Serialize.SerialBuffer({\n" +
-                "    textEncoder,\n" +
-                "    textDecoder\n" +
-                "})\n" +
-                "// protocol version + utf8 \"request\"\n" +
-                "buffer.pushArray([%d, 0x72, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74])\n" +
-                "let data = %s\n" +
-                "buffer.pushArray(data)\n" +
-                "let bufferArray = buffer.asUint8Array()\n" +
-                "return Serialize.arrayToHex(sha256(bufferArray))\n" +
-                "})()", protocolVersion, byteArrayToUnt8ScriptValue(data));
-        return gRuntime.executeStringScript(script);
-    }
 }

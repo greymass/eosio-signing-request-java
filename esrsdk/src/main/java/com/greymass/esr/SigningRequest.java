@@ -2,6 +2,7 @@ package com.greymass.esr;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Bytes;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -45,7 +46,7 @@ public class SigningRequest {
     private static final String CALLBACK = "callback";
     private static final String INFO = "info";
     private static final String SIG = "sig";
-    private IAbiProvider gApiProvider;
+    private IAbiProvider gAbiProvider;
     private ESRV8Runtime gRuntime;
     private ResourceReader gResourceReader;
     private ESR gESR;
@@ -59,7 +60,7 @@ public class SigningRequest {
     public SigningRequest(ESR esr) {
         gESR = esr;
         gResourceReader = esr.getResourceReader();
-        gApiProvider = esr.getAbiProvider();
+        gAbiProvider = esr.getAbiProvider();
         gRuntime = esr.getRuntime();
         gChainId = ChainId.EOS;
         gRequestFlag = RequestFlag.getDefault();
@@ -100,14 +101,14 @@ public class SigningRequest {
             }
         }
 
-        String requestJson = gRuntime.fromData(reqArray);
+        String requestJson = gRuntime.deserializeSigningRequest(reqArray);
         JsonObject result = (JsonObject) JsonParser.parseString(requestJson);
         JsonObject request = result.getAsJsonObject(REQ);
         gChainId = ChainId.fromVariant(request.getAsJsonArray(CHAIN_ID));
         gRequest = IRequestFactory.fromVariant(request.getAsJsonArray(REQ));
         gRequestFlag = new RequestFlag(request.get(FLAGS).getAsByte());
         gCallback = request.get(CALLBACK).getAsString();
-        gInfoPairs = InfoPair.listFromJsonArray(request.get(INFO).getAsJsonArray());
+        gInfoPairs = InfoPair.listFromDeserializedJsonArray(request.get(INFO).getAsJsonArray());
         if (result.has(SIG) && result.get(SIG).isJsonObject())
             gSignature = new Signature(result.getAsJsonObject(SIG));
         return this;
@@ -115,7 +116,7 @@ public class SigningRequest {
 
     public void setRequest(Action action) throws ESRException {
         if (!action.getData().isPacked())
-            gRuntime.serializeAction(gApiProvider, action);
+            gRuntime.serializeActionData(gAbiProvider, action);
 
         gRequest = action;
     }
@@ -123,7 +124,7 @@ public class SigningRequest {
     public void setRequest(Actions actions) throws ESRException {
         for (Action action : actions.getActions()) {
             if (!action.getData().isPacked())
-                gRuntime.serializeAction(gApiProvider, action);
+                gRuntime.serializeActionData(gAbiProvider, action);
         }
 
         gRequest = actions;
@@ -132,12 +133,12 @@ public class SigningRequest {
     public void setRequest(Transaction transaction) throws ESRException {
         for (Action action : transaction.getActionsList()) {
             if (!action.getData().isPacked())
-                gRuntime.serializeAction(gApiProvider, action);
+                gRuntime.serializeActionData(gAbiProvider, action);
         }
 
         for (Action action : transaction.getContextFreeActionsList()) {
             if (!action.getData().isPacked())
-                gRuntime.serializeAction(gApiProvider, action);
+                gRuntime.serializeActionData(gAbiProvider, action);
         }
 
         gRequest = transaction;
@@ -240,6 +241,14 @@ public class SigningRequest {
         return resolvedActions;
     }
 
+    public Transaction resolveTransaction(PermissionLevel signer) throws ESRException {
+        return resolveTransaction(fetchAbis(), signer);
+    }
+
+    public Transaction resolveTransaction(PermissionLevel signer, TransactionContext transactionContext) throws ESRException {
+        return resolveTransaction(fetchAbis(), signer, transactionContext);
+    }
+
     public Transaction resolveTransaction(Map<String, String> abiMap, PermissionLevel signer) throws ESRException {
         return resolveTransaction(abiMap, signer, new TransactionContext());
     }
@@ -266,6 +275,19 @@ public class SigningRequest {
         Transaction resolved = transaction.shallowClone();
         resolved.setActions(actions);
         return resolved;
+    }
+
+    public ResolvedSigningRequest resolve(PermissionLevel signer, TransactionContext transactionContext) throws ESRException {
+        return resolve(fetchAbis(), signer, transactionContext);
+    }
+
+    public ResolvedSigningRequest resolve(Map<String, String> abiMap, PermissionLevel signer, TransactionContext transactionContext) throws ESRException {
+        Transaction transaction = resolveTransaction(signer, transactionContext);
+        for (Action action : transaction.getActionsList())
+            gRuntime.serializeActionData(gAbiProvider, action);
+
+        byte[] serializedTransaction = gRuntime.serializeTransaction(transaction.toJSON());
+        return new ResolvedSigningRequest(this, signer, transaction, serializedTransaction);
     }
 
     public Transaction getRawTransaction() throws ESRException {
@@ -300,7 +322,7 @@ public class SigningRequest {
     public Map<String, String> fetchAbis() throws ESRException {
         Map<String, String> abiMap = Maps.newHashMap();
         for (String accountName : getRequiredAbis())
-            abiMap.put(accountName, gApiProvider.getAbi(accountName));
+            abiMap.put(accountName, gAbiProvider.getAbi(accountName));
 
         return abiMap;
     }
@@ -314,7 +336,7 @@ public class SigningRequest {
     }
 
     public byte[] getData() {
-        return gRuntime.getData(this.toDataJSON());
+        return gRuntime.serializeSigningRequest(this.toDataJSON());
     }
 
     public byte[] getSignatureData() {
@@ -348,8 +370,52 @@ public class SigningRequest {
         gRequestFlag = requestFlag;
     }
 
+    public void setInfoKey(String key, Object value) throws ESRException {
+        if (key == null)
+            throw new ESRException("Key cannot be null");
+
+        String hexValue;
+        if (value instanceof String) {
+            String stringVal = (String) value;
+            hexValue = BaseEncoding.base16().encode(stringVal.getBytes());
+        } else if (value instanceof Boolean) {
+            boolean booleanValue = (boolean) value;
+            hexValue = BaseEncoding.base16().encode(booleanValue ? new byte[]{1} : new byte[]{0});
+        } else {
+            throw new ESRException("Can only setInfoKey with string or boolean");
+        }
+        for (InfoPair pair : gInfoPairs) {
+            if (key.equals(pair.getKey())) {
+                pair.setHexValue(hexValue);
+                return;
+            }
+        }
+
+        gInfoPairs.add(new InfoPair(key, hexValue));
+    }
+
     public List<InfoPair> getInfoPairs() {
         return gInfoPairs;
+    }
+
+    public Map<String, byte[]> getRawInfo() {
+        Map<String, byte[]> rawInfo = Maps.newLinkedHashMap();
+        for (InfoPair pair : gInfoPairs)
+            rawInfo.put(pair.getKey(), pair.getBytesValue());
+
+        return rawInfo;
+    }
+
+    public Map<String, String> getInfo() {
+        Map<String, String> info = Maps.newLinkedHashMap();
+        for (InfoPair pair : gInfoPairs)
+            info.put(pair.getKey(), pair.getStringValue());
+
+        return info;
+    }
+
+    public void addInfoPair(InfoPair infoPair) {
+        gInfoPairs.add(infoPair);
     }
 
     public void setInfoPairs(List<InfoPair> infoPairs) {
@@ -370,6 +436,12 @@ public class SigningRequest {
         toEncode.put(INFO, info);
 
         return JSONUtil.stringify(toEncode);
+    }
+
+    public SigningRequest copy() throws ESRException {
+        SigningRequest copy = new SigningRequest(gESR);
+        copy.load(encode());
+        return copy;
     }
 
 }

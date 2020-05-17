@@ -27,9 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.greymass.esr.models.Identity.IDENTITY;
-import static com.greymass.esr.models.PermissionLevel.ACTOR;
-import static com.greymass.esr.models.PermissionLevel.PERMISSION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -139,7 +136,6 @@ public class CreateFromTests extends ESRTest {
         assertTrue("ref_block_prefix should be 0 (default)", 0L == transactionResult.getRefBlockPrefix());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void createIdentityTransaction() throws ESRException {
         SigningRequest signingRequest = makeSigningRequest();

@@ -2,9 +2,11 @@ package com.greymass.esr;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.google.common.collect.Lists;
 import com.greymass.esr.models.AccountName;
 import com.greymass.esr.models.PermissionLevel;
 import com.greymass.esr.models.PermissionName;
+import com.greymass.esr.models.ResolvedCallback;
 import com.greymass.esr.models.Transaction;
 import com.greymass.esr.models.TransactionContext;
 
@@ -71,6 +73,24 @@ public class ResolveTests extends ESRTest {
         assertTrue("delay_sec should be 0", 0 == transaction.getDelaySec());
 
         assertTransferActionUnpacked(transaction.getActionsList().get(0), FOO, MRACTIVE, FOO, MRACTIVE, "1.000 EOS", "hello there");
+    }
+
+    @Test
+    public void shouldResolveTemplatedCallbackUrls() throws ESRException {
+        String reqUri = "esr://gmNgZGBY1mTC_MoglIGBIVzX5uxZRqAQGDBBaUWYAARoxMIkGAJDIyAM9YySkoJiK3391IrE3IKcVL3k_Fz7kgrb6uqSitpataQ8ICspr7aWAQA";
+        SigningRequest request = makeSigningRequest();
+        request.load(reqUri);
+        TransactionContext transactionContext = new TransactionContext();
+        transactionContext.setTimestamp(EXPIRATION_TIMESTAMP);
+        transactionContext.setBlockNum(1234L);
+        transactionContext.setExpireSeconds(0);
+        transactionContext.setRefBlockPrefix(56789L);
+
+        ResolvedSigningRequest resolved = request.resolve(new PermissionLevel(FOO, BAR), transactionContext);
+        String signature = "SIG_K1_KBub1qmdiPpWA2XKKEZEG3EfKJBf38GETHzbd4t3CBdWLgdvFRLCqbcUsBbbYga6jmxfdSFfodMdhMYraKLhEzjSCsiuMs";
+        String expectedCallback = "https://example.com?tx=6AFF5C203810FF6B40469FE20318856354889FF037F4CF5B89A157514A43E825&bn=1234";
+        ResolvedCallback resolvedCallback = resolved.getCallback(Lists.newArrayList(signature), 1234);
+        assertEquals("Callback should resolve properly", expectedCallback, resolvedCallback.getUrl());
     }
 
 }

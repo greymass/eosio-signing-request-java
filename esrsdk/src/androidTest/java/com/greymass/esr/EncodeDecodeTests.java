@@ -2,12 +2,17 @@ package com.greymass.esr;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.google.common.collect.Sets;
+import com.google.common.io.BaseEncoding;
 import com.greymass.esr.interfaces.IRequest;
 import com.greymass.esr.models.Action;
 import com.greymass.esr.models.ChainId;
+import com.greymass.esr.models.Identity;
 import com.greymass.esr.models.InfoPair;
+import com.greymass.esr.models.PermissionLevel;
 import com.greymass.esr.models.RequestFlag;
 import com.greymass.esr.models.Signature;
+import com.greymass.esr.models.TransactionContext;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +23,7 @@ import java.util.Map;
 import static com.greymass.esr.SigningRequest.PLACEHOLDER_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
@@ -94,4 +100,34 @@ public class EncodeDecodeTests extends  ESRTest {
         assertEquals("Request 1 should encode back to original uri", req1uri, req1.encode());
         assertEquals("Request 2 should encode back to original uri", req2uri, req2.encode());
     }
+
+    @Test
+    public void shouldEncodeDecodeWithMetadata() throws ESRException {
+        SigningRequest request = makeSigningRequest();
+        request.setCallback(EXAMPLE_CALLBACK);
+        request.setInfoKey(FOO, BAR);
+        request.setInfoKey(BAZ, BaseEncoding.base16().encode(new byte[]{0x00, 0x01, 0x02}));
+        request.setRequest(new Identity());
+
+        SigningRequest requestDecoded = makeSigningRequest();
+        requestDecoded.load(request.encode());
+        Map<String, String> info = requestDecoded.getInfo();
+        assertTrue("Should have 2 keys", info.size() == 2);
+        assertTrue("Should have foo key", info.containsKey(FOO));
+        assertTrue("Should have baz key", info.containsKey(BAZ));
+        assertEquals("foo should be bar", BAR, info.get(FOO));
+        assertEquals("baz should be 000102", "000102", info.get(BAZ));
+    }
+
+    @Test
+    public void cloneTest() throws ESRException {
+        SigningRequest signingRequest = makeSigningRequest();
+        signingRequest.setRequest(makeTransferAction(FOO, ACTIVE, FOO, BAR, "1.000 EOS", "hello there"));
+
+        SigningRequest signingRequestCopy = signingRequest.copy();
+        assertEquals("Copy should encode the same", signingRequest.encode(), signingRequestCopy.encode());
+        signingRequestCopy.setInfoKey(FOO, true);
+        assertNotEquals("After setting info key, copy should not encode the same", signingRequest.encode(), signingRequestCopy.encode());
+    }
+
 }

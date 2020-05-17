@@ -13,6 +13,10 @@ public class PermissionLevel {
     private AccountName gAccountName;
     private PermissionName gPermissionName;
 
+    public PermissionLevel() {
+
+    }
+
     public PermissionLevel(AccountName accountName, PermissionName permissionName) {
         gAccountName = accountName;
         gPermissionName = permissionName;

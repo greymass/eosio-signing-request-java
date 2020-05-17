@@ -7,6 +7,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.greymass.esr.ESRException;
 import com.greymass.esr.interfaces.IRequest;
+import com.greymass.esr.util.JSONUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -113,6 +114,15 @@ public class Transaction extends TransactionHeader implements IRequest {
         variant.add(VARIANT_TYPE);
         variant.add(toMap());
         return variant;
+    }
+
+    public String toJSON() {
+        return JSONUtil.stringify(toMap());
+    }
+
+    @Override
+    public String toString() {
+        return toJSON();
     }
 
     private Map<String, Object> toMap() {

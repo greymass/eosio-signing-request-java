@@ -15,7 +15,7 @@ public class Identity implements IRequest {
     private PermissionLevel gPermissionLevel;
 
     public Identity() {
-
+        gPermissionLevel = new PermissionLevel();
     }
 
     public Identity(PermissionLevel permissionLevel) {

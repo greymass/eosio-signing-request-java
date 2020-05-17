@@ -57,7 +57,7 @@ public class URITests extends ESRTest {
         List<Action> actions = signingRequest.resolveActions(abiMap, PLACEHOLDER_PERMISSION_LEVEL);
         Action action = actions.get(0);
         Map<String, Object> actionMap = action.toMap();
-        actionMap.toString();
+
         throw new ESRException("Add assertions");
     }
 
@@ -70,7 +70,7 @@ public class URITests extends ESRTest {
         List<Action> actions = signingRequest.resolveActions(abiMap, PLACEHOLDER_PERMISSION_LEVEL);
         Action action = actions.get(0);
         Map<String, Object> actionMap = action.toMap();
-        actionMap.toString();
+
 
         throw new ESRException("Add assertions");
     }
