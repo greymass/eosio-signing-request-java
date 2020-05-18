@@ -1,4 +1,28 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'com.github.dcendents.android-maven'
+
+ext {
+    bintrayRepo = "com.greymass.eosio-signing-request"
+    bintrayName = "eosio-signing-request-java"
+    userOrganization = "greymass"
+
+    libraryName = 'eosio-signing-request-java'
+
+    publishedGroupId = "com.greymass"
+    artifact = "esrsdk"
+    libraryVersion = "1.0.0"
+
+    libraryDescription = "Library to assist in creating and digesting EOSIO Signing Requests (ESR)"
+    siteUrl = "https://github.com/greymass/eosio-signing-request-java"
+    gitUrl = "https://github.com/greymass/eosio-signing-request-java.git"
+    developerId = "greymass"
+    developerName = "Greymass Inc."
+    developerEmail = "team@greymass.com"
+    licenseName = "The Apache Software License, Version 2.0"
+    licenseUrl = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+    allLicenses = ["Apache-2.0"]
+}
 
 android {
     compileSdkVersion 29
@@ -34,4 +58,78 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+}
+
+bintray {
+
+    if (project.rootProject.file('local.properties').exists()) {
+
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+        user = properties.getProperty("bintray.user")
+        key = properties.getProperty("bintray.apikey")
+
+        configurations = ['archives']
+        pkg {
+            repo = bintrayRepo
+            name = bintrayName
+            userOrg = userOrganization
+            desc = libraryDescription
+            websiteUrl = siteUrl
+            vcsUrl = gitUrl
+            licenses = ["Apache-2.0"]
+            publish = true
+            publicDownloadNumbers = true
+            dryRun = false
+            version {
+                name = libraryVersion
+                desc = libraryDescription
+                released = new Date()
+            }
+        }
+    }
+
+}
+
+group = publishedGroupId
+version = libraryVersion
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom {
+            project {
+                packaging 'aar'
+                groupId publishedGroupId
+                artifactId artifact
+
+                // Add your description here
+                name libraryName
+                description libraryDescription
+                url siteUrl
+
+                // Set your license
+                licenses {
+                    license {
+                        name licenseName
+                        url licenseUrl
+                    }
+                }
+                developers {
+                    developer {
+                        id developerId
+                        name developerName
+                        email developerEmail
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+
+                }
+            }
+        }
+    }
 }
