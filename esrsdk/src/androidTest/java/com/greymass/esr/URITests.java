@@ -48,31 +48,4 @@ public class URITests extends ESRTest {
         assertTrue("Should be no info pairs", pairs.isEmpty());
     }
 
-    @Test
-    public void fromActionsURI() throws ESRException {
-        SigningRequest signingRequest = makeSigningRequest();
-        String requestUri = "esr://gmMsfNe856ui0zUByZvxc446VS9bcP1_15mbjzi6Hq1-9fnyXUZGhmVNJsyvDEIZGBjCdW3OnmUEMhganCdWgugVb42MLJAFfnBsPOkwhwEMWCICgkC0eGR-aZFCUWpyamZBiUJafpFCSGJxdk4lY1pGSUlBsZW-fnliTk5qiW5OZl62bkpqbr5eWmZRalJicWpiQYFecn6ufmJycn5pXol9Up5tdXVSXm2tWnEikFWcCGSVVABZJRUgscwUkGBmCpBdlFoIZAPJ2lomdqh2thKwvcxAFSqmZsaJFqlGybpJRsmmuiaGyZa6iYYWSbpmiUamBmZJiSnJqaYA";
-        signingRequest.load(requestUri);
-        Map<String, String> abiMap = signingRequest.fetchAbis();
-        List<Action> actions = signingRequest.resolveActions(abiMap, PLACEHOLDER_PERMISSION_LEVEL);
-        Action action = actions.get(0);
-        Map<String, Object> actionMap = action.toMap();
-
-        throw new ESRException("Add assertions");
-    }
-
-    @Test
-    public void fromIdentityURI() throws ESRException {
-        String requestUri = "esr://gmMsfNe856ui0zUByZvxc446VS9bcP1_15mbjzi6Hq1-9fnyXWZGRgYEWPHWyIghIaOkpKDYSl-_PDEnJ7VENyczL1s3JTU3Xy8tsyg1KbE4NbGgQC85P9e-ODPdtroaSNbWqhUngpiJQFZRaiGQCSRBogUg0QIQKzMFrDaltpaZPTE5Ob80r4StJLE4O6eSGSiqYmpmnGiRapSsm2SUbKprYphsqZtoaJGka5ZoZGpglpSYkpxqylRUbAdzXGmxbnJqXklRYo6hLoZDk3PyS1PSSvOSSzLz84r18lJL9ItSE0tLMgA";
-        SigningRequest signingRequest = makeSigningRequest();
-        signingRequest.load(requestUri);
-        Map<String, String> abiMap = signingRequest.fetchAbis();
-        List<Action> actions = signingRequest.resolveActions(abiMap, PLACEHOLDER_PERMISSION_LEVEL);
-        Action action = actions.get(0);
-        Map<String, Object> actionMap = action.toMap();
-
-
-        throw new ESRException("Add assertions");
-    }
-
 }
