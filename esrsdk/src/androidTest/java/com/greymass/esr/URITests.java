@@ -12,10 +12,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.List;
-import java.util.Map;
 
 import static com.greymass.esr.SigningRequest.PLACEHOLDER_NAME;
-import static com.greymass.esr.SigningRequest.PLACEHOLDER_PERMISSION_LEVEL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

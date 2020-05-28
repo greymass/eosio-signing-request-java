@@ -2,17 +2,14 @@ package com.greymass.esr;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.google.common.collect.Sets;
 import com.google.common.io.BaseEncoding;
 import com.greymass.esr.interfaces.IRequest;
 import com.greymass.esr.models.Action;
 import com.greymass.esr.models.ChainId;
 import com.greymass.esr.models.Identity;
 import com.greymass.esr.models.InfoPair;
-import com.greymass.esr.models.PermissionLevel;
 import com.greymass.esr.models.RequestFlag;
 import com.greymass.esr.models.Signature;
-import com.greymass.esr.models.TransactionContext;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

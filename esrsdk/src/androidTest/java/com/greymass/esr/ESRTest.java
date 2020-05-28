@@ -10,7 +10,6 @@ import com.greymass.esr.models.Action;
 import com.greymass.esr.models.ActionData;
 import com.greymass.esr.models.ActionName;
 import com.greymass.esr.models.PermissionLevel;
-import com.greymass.esr.models.PermissionName;
 import com.greymass.esr.models.Transaction;
 
 import java.util.List;

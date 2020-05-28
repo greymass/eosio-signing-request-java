@@ -3,9 +3,7 @@ package com.greymass.esr;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.common.collect.Lists;
-import com.greymass.esr.models.AccountName;
 import com.greymass.esr.models.PermissionLevel;
-import com.greymass.esr.models.PermissionName;
 import com.greymass.esr.models.ResolvedCallback;
 import com.greymass.esr.models.Transaction;
 import com.greymass.esr.models.TransactionContext;
