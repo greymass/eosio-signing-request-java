@@ -16,9 +16,11 @@ import com.greymass.esr.models.ChainId;
 import com.greymass.esr.models.IRequestFactory;
 import com.greymass.esr.models.Identity;
 import com.greymass.esr.models.InfoPair;
+import com.greymass.esr.models.LinkCreate;
 import com.greymass.esr.models.PermissionLevel;
 import com.greymass.esr.models.PermissionName;
 import com.greymass.esr.models.RequestFlag;
+import com.greymass.esr.models.SealedMessage;
 import com.greymass.esr.models.Signature;
 import com.greymass.esr.models.Transaction;
 import com.greymass.esr.models.TransactionContext;
@@ -412,6 +414,16 @@ public class SigningRequest {
             info.put(pair.getKey(), pair.getStringValue());
 
         return info;
+    }
+
+    public LinkCreate decodeLinkCreate(String encodedLinkCreate) {
+        String linkCreateJson = gRuntime.deserializeLinkCreate(encodedLinkCreate);
+        return new LinkCreate((JsonObject) JsonParser.parseString(linkCreateJson));
+    }
+
+    public SealedMessage decodeSealedMessage(String encodedSealedMessage) {
+        String sealedMessageJson = gRuntime.deserializeSealedMessage(encodedSealedMessage);
+        return new SealedMessage((JsonObject) JsonParser.parseString(sealedMessageJson));
     }
 
     public void addInfoPair(InfoPair infoPair) {

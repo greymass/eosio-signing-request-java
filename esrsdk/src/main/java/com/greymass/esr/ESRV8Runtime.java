@@ -63,7 +63,8 @@ public class ESRV8Runtime {
     }
 
     public String deserializeSigningRequest(byte[] data) {
-        String script = String.format("let array = Uint8Array.from(%s)\n" +
+        String script = String.format("(() => {\n" +
+                "let array = Uint8Array.from(%s)\n" +
                 "const textEncoder = {encode: global.encodeFunction}\n" +
                 "const textDecoder = {decode: global.decodeFunction}\n" +
                 "const buffer = new Serialize.SerialBuffer({\n" +
@@ -77,10 +78,39 @@ public class ESRV8Runtime {
                 "    const type = global.AbiTypes.get('request_signature')\n" +
                 "    signature = type.deserialize(buffer)\n" +
                 "}\n" +
-                "JSON.stringify({\n" +
+                "return JSON.stringify({\n" +
                 "    req: req,\n" +
                 "    sig: signature\n" +
-                "})", JSONUtil.stringify(data));
+                "})" +
+                "})()", JSONUtil.stringify(data));
+        return gRuntime.executeStringScript(script);
+    }
+
+    public String deserializeLinkCreate(String serializedLink) {
+        String script = String.format("let array = Uint8Array.from(%s)\n" +
+                "const textEncoder = {encode: global.encodeFunction}\n" +
+                "const textDecoder = {decode: global.decodeFunction}\n" +
+                "const buffer = new Serialize.SerialBuffer({\n" +
+                "    textEncoder,\n" +
+                "    textDecoder,\n" +
+                "    array,\n" +
+                "})\n" +
+                "const linkCreate = AbiTypes.get('link_create').deserialize(buffer)\n" +
+                "JSON.stringify(linkCreate)\n", JSONUtil.stringify(serializedLink));
+        return gRuntime.executeStringScript(script);
+    }
+
+    public String deserializeSealedMessage(String serializedSealedMessage) {
+        String script = String.format("let array = Uint8Array.from(%s)\n" +
+                "const textEncoder = {encode: global.encodeFunction}\n" +
+                "const textDecoder = {decode: global.decodeFunction}\n" +
+                "const buffer = new Serialize.SerialBuffer({\n" +
+                "    textEncoder,\n" +
+                "    textDecoder,\n" +
+                "    array,\n" +
+                "})\n" +
+                "const sealedMessage = AbiTypes.get('sealed_message').deserialize(buffer)\n" +
+                "JSON.stringify(sealedMessage)\n", JSONUtil.stringify(serializedSealedMessage));
         return gRuntime.executeStringScript(script);
     }
 
