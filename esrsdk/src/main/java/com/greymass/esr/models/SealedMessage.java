@@ -19,4 +19,19 @@ public class SealedMessage {
         gChecksum = jsonObject.get(CHECKSUM).getAsInt();
     }
 
+    public String getCipherText() {
+        return gCipherText;
+    }
+
+    public int getChecksum() {
+        return gChecksum;
+    }
+
+    public String getFrom() {
+        return gFrom;
+    }
+
+    public String getNonce() {
+        return gNonce;
+    }
 }

@@ -96,7 +96,7 @@ public class ESRV8Runtime {
                 "    array,\n" +
                 "})\n" +
                 "const linkCreate = AbiTypes.get('link_create').deserialize(buffer)\n" +
-                "JSON.stringify(linkCreate)\n", JSONUtil.stringify(serializedLink));
+                "JSON.stringify(linkCreate)\n", JSONUtil.stringify(decodeHexString(serializedLink)));
         return gRuntime.executeStringScript(script);
     }
 
@@ -110,7 +110,7 @@ public class ESRV8Runtime {
                 "    array,\n" +
                 "})\n" +
                 "const sealedMessage = AbiTypes.get('sealed_message').deserialize(buffer)\n" +
-                "JSON.stringify(sealedMessage)\n", JSONUtil.stringify(serializedSealedMessage));
+                "JSON.stringify(sealedMessage)\n", JSONUtil.stringify(decodeHexString(serializedSealedMessage)));
         return gRuntime.executeStringScript(script);
     }
 
@@ -368,5 +368,32 @@ public class ESRV8Runtime {
         return String.format("Uint8Array.from(%s)", JSONUtil.stringify(from));
     }
 
+    private byte[] decodeHexString(String hexString) {
+        if (hexString.length() % 2 == 1) {
+            throw new IllegalArgumentException(
+                    "Invalid hexadecimal String supplied.");
+        }
+
+        byte[] bytes = new byte[hexString.length() / 2];
+        for (int i = 0; i < hexString.length(); i += 2) {
+            bytes[i / 2] = hexToByte(hexString.substring(i, i + 2));
+        }
+        return bytes;
+    }
+
+    public byte hexToByte(String hexString) {
+        int firstDigit = toDigit(hexString.charAt(0));
+        int secondDigit = toDigit(hexString.charAt(1));
+        return (byte) ((firstDigit << 4) + secondDigit);
+    }
+
+    private int toDigit(char hexChar) {
+        int digit = Character.digit(hexChar, 16);
+        if(digit == -1) {
+            throw new IllegalArgumentException(
+                    "Invalid Hexadecimal Character: "+ hexChar);
+        }
+        return digit;
+    }
 
 }

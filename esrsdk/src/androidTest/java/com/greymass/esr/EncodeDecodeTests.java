@@ -136,16 +136,19 @@ public class EncodeDecodeTests extends  ESRTest {
 
         assertNotNull("Should get an InfoPair with key of 'link'", linkPair);
         LinkCreate lc = request.decodeLinkCreate(linkPair.getHexValue());
-        assertEquals(".k", lc.getSessionName());
-        assertEquals("PUB_K1_2wkBNMznVX3MQgPrMnrMMfnsDuhJZK4puxXSTGsjnU7fBbGgcQ", lc.getRequestKey());
+        assertEquals("bloks.io", lc.getSessionName());
+        assertEquals("PUB_K1_8i7TnUq16tbyzsfXn4URpZeiNkuWVguNR14xammQiioBLYyPPs", lc.getRequestKey());
     }
 
     @Test
     public void sealedMessageDecoding() throws ESRException {
-        String encodedSealedMessage = "0003a2aa86d264d49ddafce3f551c802923b04981a8afba47b5a00f34e1dabd5bf089bb691fb498e7501800265cd74ecd35b4cfca8889774bf6d60212ac27963706defd709aa65a737e28bc680f907cae4e6dec7c5dedd578f0f7223cb67bb4d6c0035db8c99ba33373141e67a9a7347ef88226901d5c052977c25b319de012a91257c5e29fa8282aeccf6fdd8985b0dd71ada0f64b1c226c8e255fe664c751b73af4e7137545f9b367477b3deca13c0da3aab45620f588e23fb67ec9eba0a879e4ff0bf2c6c9243e568d22a55393c2fecbe384f096916e66e642242d8f256ebfc50a3b62e407fdad56df9369190db20aa952035c3d007290895d03c9bf145af39e33fb528ce30f801300f39b120e797be8e4c0019c427d93b22c590d7e1d15e592c7d457755cf3b5fd1196e608b9463";
+        String encodedSealedMessage = "0002a4da60767117306bb1a44b460afb9d418bf0e2af6df5ca40f34d96c115b0d7b64de45e889c9e7501401f1e38feaa2933aa59e457a1aa114c89d50b421cfca436435c25705966e841c002b44a43fb079dc2ff248124df7c7423baaa35f20533b5aa6772ad5e838364e74a142065";
         SigningRequest request = makeSigningRequest();
         SealedMessage sealed = request.decodeSealedMessage(encodedSealedMessage);
-        assertEquals("X", "X");
+        assertEquals("1F1E38FEAA2933AA59E457A1AA114C89D50B421CFCA436435C25705966E841C002B44A43FB079DC2FF248124DF7C7423BAAA35F20533B5AA6772AD5E838364E7", sealed.getCipherText());
+        assertEquals(1696601162, sealed.getChecksum());
+        assertEquals("PUB_K1_696JY3QNN7SeiMK9xuKJYwWsW8us6LK2MkE6oeHDLXWczqD7jx", sealed.getFrom());
+        assertEquals("105164561453081677", sealed.getNonce());
     }
 
     @Test
