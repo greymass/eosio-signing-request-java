@@ -16,7 +16,7 @@ The ESR protocol allows for an application (dapp) to generate signature requests
 
 To add esrsdk to your android project's gradle.build file:
 
-```implementation 'com.greymass:esrsdk:1.0.2'```
+```implementation 'com.greymass:esrsdk:1.0.3'```
 
 ---
 
