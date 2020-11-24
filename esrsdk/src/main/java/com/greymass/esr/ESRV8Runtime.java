@@ -120,7 +120,7 @@ public class ESRV8Runtime {
 
         String script = String.format("(function() {\n" +
                 "let contract = " +
-                (action.isIdentity() ? "global.getContract(global.abi)" : "global.getContract(" + abiProvider.getAbi(action.getAccount().getName()) + ")") + "\n" +
+                (action.isIdentity() ? "global.getContract(global.abi.data)" : "global.getContract(" + abiProvider.getAbi(action.getAccount().getName()) + ")") + "\n" +
                 "let serializedActionData = global.Serialize.serializeActionData(contract, '%s', '%s', %s, {encode: global.encodeFunction}, {decode: global.decodeFunction})\n" +
                 "return serializedActionData\n" +
                 "})()",
