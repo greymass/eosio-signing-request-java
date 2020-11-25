@@ -9,12 +9,21 @@ import com.greymass.esr.models.Transaction;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.greymass.esr.models.ResolvedCallback.*;
+import static com.greymass.esr.models.ResolvedCallback.BN;
+import static com.greymass.esr.models.ResolvedCallback.EX;
+import static com.greymass.esr.models.ResolvedCallback.RBN;
+import static com.greymass.esr.models.ResolvedCallback.REQ;
+import static com.greymass.esr.models.ResolvedCallback.RID;
+import static com.greymass.esr.models.ResolvedCallback.SA;
+import static com.greymass.esr.models.ResolvedCallback.SIG;
+import static com.greymass.esr.models.ResolvedCallback.SP;
+import static com.greymass.esr.models.ResolvedCallback.TX;
 
 public class ResolvedSigningRequest {
 
@@ -28,6 +37,10 @@ public class ResolvedSigningRequest {
         gSigner = signer;
         gTransaction = transaction;
         gSerializedTransaction = serializedTransaction;
+    }
+
+    public byte[] getSerializedTransaction() {
+        return Arrays.copyOf(gSerializedTransaction, gSerializedTransaction.length);
     }
 
     public String getTransactionId() throws ESRException {
