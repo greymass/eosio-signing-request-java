@@ -4,7 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.greymass.esr.interfaces.IRequest;
 import com.greymass.esr.models.Action;
-import com.greymass.esr.models.ChainId;
+import com.greymass.esr.models.Chain;
 import com.greymass.esr.models.InfoPair;
 import com.greymass.esr.models.RequestFlag;
 
@@ -26,7 +26,7 @@ public class URITests extends ESRTest {
         String requestUri = "esr://gmNgZGBY1mTC_MoglIGBIVzX5uxZRqAQGMBoExgDAjRi4fwAVz93ICUckpGYl12skJZfpFCSkaqQllmcwczAAAA";
         signingRequest.load(requestUri);
 
-        assertEquals("ChainId should be EOS", signingRequest.getChainId(), ChainId.EOS);
+        assertEquals("ChainId should be EOS", signingRequest.getChainId().getChainAlias(), Chain.EOS.getAlias());
         IRequest request = signingRequest.getRequest();
         assertTrue("Should get an Action type of request", (request instanceof Action));
         Action action = (Action) request;

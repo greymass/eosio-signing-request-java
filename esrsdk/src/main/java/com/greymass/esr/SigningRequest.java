@@ -12,6 +12,7 @@ import com.greymass.esr.interfaces.ISignatureProvider;
 import com.greymass.esr.models.AccountName;
 import com.greymass.esr.models.Action;
 import com.greymass.esr.models.Actions;
+import com.greymass.esr.models.Chain;
 import com.greymass.esr.models.ChainId;
 import com.greymass.esr.models.IRequestFactory;
 import com.greymass.esr.models.Identity;
@@ -64,7 +65,7 @@ public class SigningRequest {
         gResourceReader = esr.getResourceReader();
         gAbiProvider = esr.getAbiProvider();
         gRuntime = esr.getRuntime();
-        gChainId = ChainId.EOS;
+        gChainId = new ChainId(Chain.EOS);
         gRequestFlag = RequestFlag.getDefault();
         gCallback = "";
         gInfoPairs = Lists.newArrayList();

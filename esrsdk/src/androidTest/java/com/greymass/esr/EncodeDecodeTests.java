@@ -5,13 +5,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.google.common.io.BaseEncoding;
 import com.greymass.esr.interfaces.IRequest;
 import com.greymass.esr.models.Action;
-import com.greymass.esr.models.ChainId;
+import com.greymass.esr.models.Chain;
 import com.greymass.esr.models.Identity;
 import com.greymass.esr.models.InfoPair;
 import com.greymass.esr.models.LinkCreate;
+import com.greymass.esr.models.PermissionLevel;
 import com.greymass.esr.models.RequestFlag;
 import com.greymass.esr.models.SealedMessage;
 import com.greymass.esr.models.Signature;
+import com.greymass.esr.models.TransactionContext;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,7 +44,7 @@ public class EncodeDecodeTests extends  ESRTest {
         SigningRequest signingRequest2 = makeSigningRequest();
         signingRequest2.load(encoded);
 
-        assertEquals("ChainId should be EOS", signingRequest2.getChainId(), ChainId.EOS);
+        assertEquals("ChainId should be EOS", signingRequest2.getChainId().getChainAlias(), Chain.EOS.getAlias());
         IRequest request = signingRequest2.getRequest();
         assertTrue("Should get an Action type of request", (request instanceof Action));
         Action action = (Action) request;
@@ -160,6 +162,34 @@ public class EncodeDecodeTests extends  ESRTest {
         assertEquals("Copy should encode the same", signingRequest.encode(), signingRequestCopy.encode());
         signingRequestCopy.setInfoKey(FOO, true);
         assertNotEquals("After setting info key, copy should not encode the same", signingRequest.encode(), signingRequestCopy.encode());
+    }
+
+    @Test
+    public void testCustomChain() throws ESRException {
+        String esr = "esr:AgE4TaiIESAn8DIYUKFp9zfDPlOziKrUi1razkurl_Q34AMAAjtodHRwczovL2NiLmFuY2hvci5saW5rL2RkZDc2Y2QxLWM1NDYtNDk0Yi04Y2IxLWNiNTJlMWY3MDc3ZAIEbGluaypwc1bnUgyReQADWEoltQglcC2sCjxdf6uy1bSiVdQyZxVyEl1gzTdfLkALcmVxX2FjY291bnQMamFja3NvcmJldHRy";
+        SigningRequest request = makeSigningRequest();
+        request.load(esr);
+        "x".hashCode();
+    }
+
+
+    @Test
+    public void testJoey() throws ESRException {
+        String esr = "esr:AgFx7oO89SFC1hAZ2V-cxUJ7pqDX_4rM2eIIiuKr6vPT3QMAAjtodHRwczovL2NiLmFuY2hvci5saW5rL2I0Y2Y5YjQ3LTIwMzAtNDY4My05ZjA3LWMyMGRiZmJiNzdmYgEEbGluayoAAADUAQxpPAADg_GPgyKZySF0QiLDq0O9OMTh7rq8XG5eTTJg5Cj1R2k";
+        SigningRequest request = makeSigningRequest();
+        request.load(esr);
+        String linkHex = "000000D4010C693C000383F18F832299C921744222C3AB43BD38C4E1EEBABC5C6E5E4D3260E428F54769";
+        LinkCreate linkCreate = request.decodeLinkCreate(linkHex);
+
+        Map<String, String> abiMap = request.fetchAbis();
+        TransactionContext transactionContext = new TransactionContext();
+        transactionContext.setTimestamp(EXPIRATION_TIMESTAMP);
+        transactionContext.setBlockNum(1234L);
+        transactionContext.setExpireSeconds(0);
+        transactionContext.setRefBlockPrefix(56789L);
+        ResolvedSigningRequest transaction = request.resolve(abiMap, new PermissionLevel(FOO, BAR), transactionContext);
+
+        "x".hashCode();
     }
 
 }

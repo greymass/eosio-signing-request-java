@@ -1,24 +1,17 @@
 package com.greymass.esr;
 
-import android.telecom.Call;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.greymass.esr.interfaces.IRequest;
-import com.greymass.esr.models.AccountName;
 import com.greymass.esr.models.Action;
 import com.greymass.esr.models.Actions;
-import com.greymass.esr.models.Callback;
-import com.greymass.esr.models.ChainId;
+import com.greymass.esr.models.Chain;
 import com.greymass.esr.models.Identity;
 import com.greymass.esr.models.InfoPair;
 import com.greymass.esr.models.PermissionLevel;
-import com.greymass.esr.models.PermissionName;
 import com.greymass.esr.models.RequestFlag;
 import com.greymass.esr.models.Transaction;
-import com.greymass.esr.models.TransactionContext;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,7 +33,7 @@ public class CreateFromTests extends ESRTest {
         SigningRequest signingRequest = makeSigningRequest();
         signingRequest.setRequest(makeTransferAction(FOO, ACTIVE, FOO, BAR, "1.000 EOS", "hello there"));
 
-        assertEquals("ChainId should be EOS", signingRequest.getChainId(), ChainId.EOS);
+        assertEquals("ChainId should be EOS", signingRequest.getChainId().getChainAlias(), Chain.EOS.getAlias());
         IRequest request = signingRequest.getRequest();
         assertTrue("Should get an Action type of request", (request instanceof Action));
         Action action = (Action) request;
@@ -69,7 +62,7 @@ public class CreateFromTests extends ESRTest {
         signingRequest.setRequest(actions);
         signingRequest.setCallback(EXAMPLE_CALLBACK);
 
-        assertEquals("ChainId should be EOS", signingRequest.getChainId(), ChainId.EOS);
+        assertEquals("ChainId should be EOS", signingRequest.getChainId().getChainAlias(), Chain.EOS.getAlias());
         IRequest request = signingRequest.getRequest();
         assertTrue("Should get an Actions type of request", (request instanceof Actions));
         Actions actionsResult = (Actions) request;
@@ -106,7 +99,7 @@ public class CreateFromTests extends ESRTest {
         signingRequest.setCallback(EXAMPLE_CALLBACK);
         signingRequest.setRequest(transaction);
 
-        assertEquals("ChainId should be EOS", signingRequest.getChainId(), ChainId.EOS);
+        assertEquals("ChainId should be EOS", signingRequest.getChainId().getChainAlias(), Chain.EOS.getAlias());
         IRequest request = signingRequest.getRequest();
         assertTrue("Should get a Transaction type of request", (request instanceof Transaction));
         Transaction transactionResult = (Transaction) request;
