@@ -38,7 +38,7 @@ public class JSONUtil {
                 return primitive.getAsString();
 
             if (primitive.isNumber())
-                return primitive.getAsNumber();
+                return primitive.getAsDouble();
 
             if (primitive.isBoolean())
                 return primitive.getAsBoolean();
