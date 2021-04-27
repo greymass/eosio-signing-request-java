@@ -11,7 +11,7 @@ ext {
 
     publishedGroupId = "com.greymass"
     artifact = "esrsdk"
-    libraryVersion = "1.0.4"
+    libraryVersion = "1.0.7"
 
     libraryDescription = "Library to assist in creating and digesting EOSIO Signing Requests (ESR)"
     siteUrl = "https://github.com/greymass/eosio-signing-request-java"
